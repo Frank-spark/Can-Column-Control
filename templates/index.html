@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <script src='https://cdn.tailwindcss.com'></script>
+    <script src='https://unpkg.com/alpinejs' defer></script>
+    <title>CAN Actuator Control</title>
+</head>
+<body class='bg-gray-100 flex items-center justify-center h-screen'>
+    <div class='bg-white p-6 rounded-lg shadow-lg w-96' x-data="canControl">
+        <h2 class='text-xl font-bold text-gray-700 text-center'>CAN Actuator Control</h2>
+        
+        <div class='mt-4'>
+            <label class='block text-gray-600'>Select COM Port:</label>
+            <select class='w-full p-2 border rounded' x-model='selectedPort' @click="fetchPorts()">
+                <template x-for="port in ports" :key="port">
+                    <option x-text="port"></option>
+                </template>
+            </select>
+        </div>
+        
+        <button class='mt-4 w-full bg-blue-500 text-white p-2 rounded' @click='connect()'>Connect</button>
+        
+        <div x-text='message' class='mt-2 text-center text-sm text-gray-600'></div>
+        
+        <div class='mt-4' x-show='connected'>
+            <label class='block text-gray-600 mt-2'>Target Position (mm):</label>
+            <input type='number' class='w-full p-2 border rounded' x-model='targetPosition' min='0' max='6000'>
+
+            <label class='block text-gray-600 mt-2'>Speed (%):</label>
+            <input type='number' class='w-full p-2 border rounded' x-model='targetSpeed' min='1' max='1000'>
+
+            <label class='block text-gray-600 mt-2'>Acceleration:</label>
+            <input type='number' class='w-full p-2 border rounded' x-model='acceleration' min='1' max='1000'>
+
+            <button class='w-full bg-green-500 text-white p-2 rounded mt-4' @click='move("raise")'>Raise</button>
+            <button class='w-full bg-red-500 text-white p-2 rounded mt-2' @click='move("lower")'>Lower</button>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('canControl', () => ({
+                ports: [],
+                selectedPort: '',
+                connected: false,
+                message: '',
+                targetPosition: 600,  // Default 100mm
+                targetSpeed: 300,  // Default 80% duty cycle
+                acceleration: 500,  // Default acceleration
+
+                init() {
+                    this.fetchPorts();
+                },
+
+                async fetchPorts() {
+                    console.log("Fetching COM ports...");
+                    let response = await fetch('/list_ports');
+                    this.ports = await response.json();
+                    console.log("Fetched Ports:", this.ports);
+                },
+
+                async connect() {
+                    if (!this.selectedPort) {
+                        this.message = "Please select a COM port.";
+                        return;
+                    }
+
+                    let response = await fetch('/connect', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ com_port: this.selectedPort })
+                    });
+
+                    let data = await response.json();
+                    this.message = data.message;
+                    this.connected = data.status === 'success';
+                },
+
+                async move(direction) {
+                    let response = await fetch('/move', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            direction,
+                            target_position: this.targetPosition,
+                            target_speed: this.targetSpeed,
+                            acceleration: this.acceleration
+                        })
+                    });
+
+                    let data = await response.json();
+                    this.message = data.message;
+                }
+            }));
+        });
+    </script>
+</body>
+</html>

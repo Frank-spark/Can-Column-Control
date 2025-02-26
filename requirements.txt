@@ -1,0 +1,7 @@
+flask
+flask-socketio
+pyqt6
+pyqt6-webengine
+canopen
+python-can
+alpinejs
