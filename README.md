@@ -1,4 +1,4 @@
-### **Document: Explanation of `control3.py`**
+
 This document explains the functionality of `control.py`, a **Flask and PyQt-based application** that controls a **CANopen actuator**. The script manages **CAN communication, actuator movement, and UI interaction**.
 
 ---
